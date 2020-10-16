@@ -239,10 +239,6 @@ fn multicore_try_32_bits() {
                                 panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
                             }
                             idx += 1;
-
-                            if (idx - start_idx) % (1<<20) == 0 {
-                                println!("Progressed {} elements", idx - start_idx);
-                            }
                         }
                     }
                 });
