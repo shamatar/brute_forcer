@@ -200,7 +200,7 @@ fn multicore_try_32_bits() {
                         let mut el = *e;
                         el.mul_assign(&mul_by);
 
-                        let el = el.into_repr();
+                        // let el = el.into_repr();
 
                         if set.contains(&el) {
                             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
