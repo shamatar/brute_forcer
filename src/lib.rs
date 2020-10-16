@@ -175,7 +175,8 @@ fn multicore_try_32_bits() {
     println!("Allocate sets");
 
     let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
-    let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
+    // let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
+    let mut sets = vec![std::collections::HashSet::new(); num_threads];
 
     println!("Start verification of encodings and shifts for uniqueness in them");
     for shift_1 in 0..WIDTH {
@@ -186,6 +187,7 @@ fn multicore_try_32_bits() {
             for (chunk, set) in results.chunks(chunk_size).zip(sets.chunks_mut(1)) {
                 scope.spawn(move |_| {
                     let set = &mut set[0];
+                    set.reserve((1 << WIDTH) / num_threads);
                     let mut idx = start_idx;
                     for e in chunk.iter() {
                         let mut el = *e;
