@@ -236,34 +236,35 @@ fn multicore_try_32_bits() {
     let initial_capacity = maps[0].capacity();
 
     for shift_1 in 0..WIDTH {
+        let start = std::time::Instant::now();
+        // insert initial maps for values of shift_1
+        let mul_by = gen_powers[shift_1 as usize];
+        worker.scope(len, |scope, chunk_size| {
+            let mut start_idx = 0;
+            for (chunk, map) in results.chunks(chunk_size).zip(maps.chunks_mut(1)) {
+                scope.spawn(move |_| {
+                    let map = &mut map[0];
+                    map.clear();
+                    if map.capacity() == initial_capacity {
+                        map.reserve((1 << WIDTH) / num_threads);
+                    }
+                    let mut idx = start_idx;
+                    for e in chunk.iter() {
+                        let mut el = *e;
+                        el.mul_assign(&mul_by);
+
+                        map.insert(el, (idx as u32, shift_1 as u8));
+                        idx += 1;
+                    }
+                });
+
+                start_idx += chunk_size;
+            }
+        });
+
+        println!("Insertions taken {:?}", start.elapsed());
+
         for shift_2 in (shift_1+1)..WIDTH {
-            let start = std::time::Instant::now();
-            // insert initial maps for values of shift_1
-            let mul_by = gen_powers[shift_1 as usize];
-            worker.scope(len, |scope, chunk_size| {
-                let mut start_idx = 0;
-                for (chunk, map) in results.chunks(chunk_size).zip(maps.chunks_mut(1)) {
-                    scope.spawn(move |_| {
-                        let map = &mut map[0];
-                        map.clear();
-                        if map.capacity() == initial_capacity {
-                            map.reserve((1 << WIDTH) / num_threads);
-                        }
-                        let mut idx = start_idx;
-                        for e in chunk.iter() {
-                            let mut el = *e;
-                            el.mul_assign(&mul_by);
-
-                            map.insert(el, (idx as u32, shift_1 as u8));
-                            idx += 1;
-                        }
-                    });
-
-                    start_idx += chunk_size;
-                }
-            });
-
-            println!("Insertions taken {:?}", start.elapsed());
             let start = std::time::Instant::now();
 
             let maps_ref = &maps;
