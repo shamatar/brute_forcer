@@ -151,74 +151,132 @@ fn multicore_try_32_bits() {
 
     // first trivial checks: there is no trivial encoding as is
 
-    let mut set = std::collections::HashSet::with_capacity(1 << WIDTH);
-    for shift_1 in 0..WIDTH {
-        set.clear();
+    // let mut set = std::collections::HashSet::with_capacity(1 << WIDTH);
+    // for shift_1 in 0..WIDTH {
+    //     set.clear();
 
-        let mul_by = gen_powers[shift_1 as usize];
+    //     let mul_by = gen_powers[shift_1 as usize];
+    //     // insert initial
+    //     for (idx, &el) in results.iter().enumerate() {
+    //         let mut el = el;
+    //         el.mul_assign(&mul_by);
+    //         if set.contains(&el) {
+    //             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+    //         } else {
+    //             set.insert(el);
+    //         }
+    //     }
+
+    //     println!("Finished checking that shift {} contains no duplicates", shift_1);
+    // }
+
+    // drop(set);
+
+    let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
+    let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
+
+    for shift_1 in 0..WIDTH {
         // insert initial
-        for (idx, &el) in results.iter().enumerate() {
-            let mut el = el;
-            el.mul_assign(&mul_by);
-            if set.contains(&el) {
-                panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
-            } else {
-                set.insert(el);
+        let mul_by = gen_powers[shift_1 as usize];
+        worker.scope(len, |scope, chunk_size| {
+            let mut start_idx = 0;
+            for (chunk, set) in results.chunks(chunk_size).zip(sets.chunks_mut(1)) {
+                scope.spawn(move |_| {
+                    let set = &mut set[0];
+                    let mut idx = start_idx;
+                    for e in chunk.iter() {
+                        let mut el = *e;
+                        el.mul_assign(&mul_by);
+
+                        if set.contains(&el) {
+                            panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+                        } else {
+                            set.insert(el);
+                        }
+                        idx += 1;
+                    }
+                });
+
+                start_idx += chunk_size;
             }
-        }
+        });
+
+        let sets = &sets;
+        worker.scope(len, |scope, chunk_size| {
+            let mut start_idx = 0;
+            for (chunk_idx, chunk) in results.chunks(chunk_size).enumerate() {
+                scope.spawn(move |_| {
+                    for set_idx in 0..sets.len() {
+                        if set_idx == chunk_idx {
+                            continue;
+                        }
+                        let set = &sets[set_idx];
+                        let mut idx = start_idx;
+                        for el in chunk.iter() {
+                            if set.contains(&el) {
+                                panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+                            }
+                            idx += 1;
+                        }
+                    }
+                });
+
+                start_idx += chunk_size;
+            }
+        });
 
         println!("Finished checking that shift {} contains no duplicates", shift_1);
     }
 
-    drop(set);
+    drop(sets);
 
-    let mut map: std::collections::HashMap::<Fr, (u32, u8)> = std::collections::HashMap::with_capacity(1 << WIDTH);
+    // let mut map: std::collections::HashMap::<Fr, (u32, u8)> = std::collections::HashMap::with_capacity(1 << WIDTH);
 
-    for shift_1 in 0..WIDTH {
-        for shift_2 in (shift_1+1)..WIDTH {
-            map.clear();
-            let mul_by = gen_powers[shift_1 as usize];
-            // insert initial
-            for (idx, &el) in results.iter().enumerate() {
-                let mut el = el;
-                el.mul_assign(&mul_by);
-                if let Some(..) = map.get(&el) {
-                    panic!("explicit duplicate");
-                } else {
-                    map.insert(el, (idx as u32, shift_1 as u8));
-                }
-            }
+    // for shift_1 in 0..WIDTH {
+    //     for shift_2 in (shift_1+1)..WIDTH {
+    //         map.clear();
+    //         let mul_by = gen_powers[shift_1 as usize];
+    //         // insert initial
+    //         for (idx, &el) in results.iter().enumerate() {
+    //             let mut el = el;
+    //             el.mul_assign(&mul_by);
+    //             if let Some(..) = map.get(&el) {
+    //                 panic!("explicit duplicate");
+    //             } else {
+    //                 map.insert(el, (idx as u32, shift_1 as u8));
+    //             }
+    //         }
 
-            let map_ref = &map;
+    //         let map_ref = &map;
 
-            // check
-            let mul_by = gen_powers[shift_2 as usize];
-            worker.scope(len, |scope, chunk_size| {
-                let mut start_idx = 0;
-                for chunk in results.chunks(chunk_size) {
-                    scope.spawn(move |_| {
-                        let mut idx = start_idx;
-                        for e in chunk.iter() {
-                            let mut el = *e;
-                            el.mul_assign(&mul_by);
+    //         // check
+    //         let mul_by = gen_powers[shift_2 as usize];
+    //         worker.scope(len, |scope, chunk_size| {
+    //             let mut start_idx = 0;
+    //             for chunk in results.chunks(chunk_size) {
+    //                 scope.spawn(move |_| {
+    //                     let mut idx = start_idx;
+    //                     for e in chunk.iter() {
+    //                         let mut el = *e;
+    //                         el.mul_assign(&mul_by);
 
-                            if let Some(val) = map_ref.get(&el) {
-                                let value = idx as u32;
-                                let this_rotated_value = rotate_left_32(val.0, val.1 as usize);
-                                let other_rotated_value = rotate_left_32(value, shift_2);
-                                if this_rotated_value != other_rotated_value {
-                                    panic!("Same encoding of {} for value {:#b}, shift {} and value {:#b}, shift {}", el, val.0, val.1, value, shift_2);
-                                }
-                            }
-                            idx += 1;
-                        }
-                    });
+    //                         if let Some(val) = map_ref.get(&el) {
+    //                             let value = idx as u32;
+    //                             let this_rotated_value = rotate_left_32(val.0, val.1 as usize);
+    //                             let other_rotated_value = rotate_left_32(value, shift_2);
+    //                             if this_rotated_value != other_rotated_value {
+    //                                 panic!("Same encoding of {} for value {:#b}, shift {} and value {:#b}, shift {}", el, val.0, val.1, value, shift_2);
+    //                             }
+    //                         }
+    //                         idx += 1;
+    //                     }
+    //                 });
 
-                    start_idx += chunk_size;
-                }
-            });
+    //                 start_idx += chunk_size;
+    //             }
+    //         });
 
-            println!("Finished checking shift {} vs shift {}", shift_1, shift_2);
-        }
-    }
+    //         println!("Finished checking shift {} vs shift {}", shift_1, shift_2);
+    //     }
+    // }
 }
