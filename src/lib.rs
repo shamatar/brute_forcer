@@ -196,40 +196,44 @@ fn multicore_try_32_bits() {
             let mut start_idx = 0;
             for (chunk_idx, chunk) in results.chunks(chunk_size).enumerate() {
                 scope.spawn(move |_| {
-                    // let mut idx = start_idx;
-                    // for el in chunk.iter() {
-                    //     let mut el = *el;
-                    //     el.mul_assign(&mul_by);
+                    let mut idx = start_idx;
+                    for el in chunk.iter() {
+                        let mut el = *el;
+                        el.mul_assign(&mul_by);
 
-                    //     for set_idx in 0..sets.len() {
-                    //         if set_idx == chunk_idx {
-                    //             continue;
-                    //         }
-                    //         let set = &sets[set_idx];
-                    //         if set.contains(&el) {
-                    //             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b} against something in set {}", shift_1, el, idx, set_idx);
-                    //         }
-                    //     }
-
-                    //     idx += 1;
-                    // }
-
-                    for set_idx in 0..sets.len() {
-                        if set_idx == chunk_idx {
-                            continue;
-                        }
-                        let set = &sets[set_idx];
-                        let mut idx = start_idx;
-                        for el in chunk.iter() {
-                            let mut el = *el;
-                            el.mul_assign(&mul_by);
-
+                        for set_idx in 0..sets.len() {
+                            if set_idx == chunk_idx {
+                                continue;
+                            }
+                            let set = &sets[set_idx];
                             if set.contains(&el) {
                                 panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b} against something in set {}", shift_1, el, idx, set_idx);
                             }
-                            idx += 1;
+                        }
+
+                        idx += 1;
+
+                        if (idx - start_idx) % (1<<20) == 0 {
+                            println!("Done {} items", idx - start_idx);
                         }
                     }
+
+                    // for set_idx in 0..sets.len() {
+                    //     if set_idx == chunk_idx {
+                    //         continue;
+                    //     }
+                    //     let set = &sets[set_idx];
+                    //     let mut idx = start_idx;
+                    //     for el in chunk.iter() {
+                    //         let mut el = *el;
+                    //         el.mul_assign(&mul_by);
+
+                    //         if set.contains(&el) {
+                    //             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b} against something in set {}", shift_1, el, idx, set_idx);
+                    //         }
+                    //         idx += 1;
+                    //     }
+                    // }
                 });
 
                 start_idx += chunk_size;
