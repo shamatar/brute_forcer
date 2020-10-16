@@ -137,11 +137,10 @@ fn multicore_try_32_bits() {
         for chunk in results.chunks_mut(chunk_size) {
             let start = start_idx as u64;
             scope.spawn(move |_| {
-                let mut base = generator.pow(&[start]);
+                let mut idx = start;
                 for el in chunk.iter_mut() {
-                    *el = base;
-
-                    base.mul_assign(&generator);
+                    *el = encode_32(idx as u32, &gen_powers);
+                    idx += 1;
                 }
             });
             start_idx += chunk_size;
