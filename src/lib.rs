@@ -192,7 +192,7 @@ fn multicore_try_32_bits() {
         println!("Insertions taken {:?}", start.elapsed());
         let start = std::time::Instant::now();
 
-        let pb = indicatif::ProgressBar::new((1 << WIDTH) as u64);
+        let pb = indicatif::ProgressBar::new((1u64 << WIDTH) as u64);
 
         let sets = &sets;
         worker.scope(len, |scope, chunk_size| {
