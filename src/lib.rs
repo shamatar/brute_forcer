@@ -149,110 +149,85 @@ fn multicore_try_32_bits() {
 
     println!("Finished pre-generation");
 
-    // first trivial checks: there is no trivial encoding as is
+    let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
 
-    // let mut set = std::collections::HashSet::with_capacity(1 << WIDTH);
+    // println!("Allocate sets");
+    // let mut sets = vec![std::collections::HashSet::new(); num_threads];
+
+    // let initial_capacity = sets[0].capacity();
+
+    // println!("Start verification of encodings and shifts for uniqueness in them");
     // for shift_1 in 0..WIDTH {
-    //     set.clear();
-
-    //     let mul_by = gen_powers[shift_1 as usize];
+    //     let start = std::time::Instant::now();
     //     // insert initial
-    //     for (idx, &el) in results.iter().enumerate() {
-    //         let mut el = el;
-    //         el.mul_assign(&mul_by);
-    //         if set.contains(&el) {
-    //             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
-    //         } else {
-    //             set.insert(el);
+    //     let mul_by = gen_powers[shift_1 as usize];
+    //     worker.scope(len, |scope, chunk_size| {
+    //         let mut start_idx = 0;
+    //         for (chunk, set) in results.chunks(chunk_size).zip(sets.chunks_mut(1)) {
+    //             scope.spawn(move |_| {
+    //                 let set = &mut set[0];
+    //                 set.clear();
+    //                 if set.capacity() == initial_capacity {
+    //                     set.reserve((1 << WIDTH) / num_threads);
+    //                 }
+    //                 let mut idx = start_idx;
+    //                 for e in chunk.iter() {
+    //                     let mut el = *e;
+    //                     el.mul_assign(&mul_by);
+
+    //                     // let el = el.into_repr();
+
+    //                     if set.contains(&el) {
+    //                         panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+    //                     } else {
+    //                         set.insert(el);
+    //                     }
+    //                     idx += 1;
+    //                 }
+    //             });
+
+    //             start_idx += chunk_size;
     //         }
-    //     }
+    //     });
+
+    //     println!("Insertions taken {:?}", start.elapsed());
+    //     let start = std::time::Instant::now();
+
+    //     let sets = &sets;
+    //     worker.scope(len, |scope, chunk_size| {
+    //         let mut start_idx = 0;
+    //         for (chunk_idx, chunk) in results.chunks(chunk_size).enumerate() {
+    //             scope.spawn(move |_| {
+    //                 for set_idx in 0..sets.len() {
+    //                     if set_idx == chunk_idx {
+    //                         continue;
+    //                     }
+    //                     let set = &sets[set_idx];
+    //                     // let this_set = &sets[chunk_idx];
+    //                     // if !this_set.is_disjoint(set) {
+    //                     //     panic!("encoding is not unique!");
+    //                     // }
+    //                     let mut idx = start_idx;
+    //                     for el in chunk.iter() {
+    //                         // let el = el.into_repr();
+    //                         if set.contains(&el) {
+    //                             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+    //                         }
+    //                         idx += 1;
+    //                     }
+    //                 }
+    //             });
+
+    //             start_idx += chunk_size;
+    //         }
+    //     });
+
+    //     println!("Verification taken {:?}", start.elapsed());
 
     //     println!("Finished checking that shift {} contains no duplicates", shift_1);
     // }
 
-    // drop(set);
-
-    println!("Allocate sets");
-
-    let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
-    // let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
-    let mut sets = vec![std::collections::HashSet::new(); num_threads];
-    // let mut sets = vec![std::collections::BTreeSet::new(); num_threads];
-
-    let initial_capacity = sets[0].capacity();
-
-    println!("Start verification of encodings and shifts for uniqueness in them");
-    for shift_1 in 0..WIDTH {
-        let start = std::time::Instant::now();
-        // insert initial
-        let mul_by = gen_powers[shift_1 as usize];
-        worker.scope(len, |scope, chunk_size| {
-            let mut start_idx = 0;
-            for (chunk, set) in results.chunks(chunk_size).zip(sets.chunks_mut(1)) {
-                scope.spawn(move |_| {
-                    let set = &mut set[0];
-                    set.clear();
-                    if set.capacity() == initial_capacity {
-                        set.reserve((1 << WIDTH) / num_threads);
-                    }
-                    let mut idx = start_idx;
-                    for e in chunk.iter() {
-                        let mut el = *e;
-                        el.mul_assign(&mul_by);
-
-                        // let el = el.into_repr();
-
-                        if set.contains(&el) {
-                            panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
-                        } else {
-                            set.insert(el);
-                        }
-                        idx += 1;
-                    }
-                });
-
-                start_idx += chunk_size;
-            }
-        });
-
-        println!("Insertions taken {:?}", start.elapsed());
-        let start = std::time::Instant::now();
-
-        let sets = &sets;
-        worker.scope(len, |scope, chunk_size| {
-            let mut start_idx = 0;
-            for (chunk_idx, chunk) in results.chunks(chunk_size).enumerate() {
-                scope.spawn(move |_| {
-                    for set_idx in 0..sets.len() {
-                        if set_idx == chunk_idx {
-                            continue;
-                        }
-                        let set = &sets[set_idx];
-                        // let this_set = &sets[chunk_idx];
-                        // if !this_set.is_disjoint(set) {
-                        //     panic!("encoding is not unique!");
-                        // }
-                        let mut idx = start_idx;
-                        for el in chunk.iter() {
-                            // let el = el.into_repr();
-                            if set.contains(&el) {
-                                panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
-                            }
-                            idx += 1;
-                        }
-                    }
-                });
-
-                start_idx += chunk_size;
-            }
-        });
-
-        println!("Verification taken {:?}", start.elapsed());
-
-        println!("Finished checking that shift {} contains no duplicates", shift_1);
-    }
-
-    drop(sets);
+    // drop(sets);
 
     // set's are unique in themselves, so now need to check
     // across checks
