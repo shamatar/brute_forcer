@@ -158,6 +158,7 @@ fn multicore_try_32_bits() {
 
     println!("Start verification of encodings and shifts for uniqueness in them");
     for shift_1 in 0..WIDTH {
+        println!("Testing for shift {}", shift_1);
         let start = std::time::Instant::now();
         // insert initial
         let mul_by = gen_powers[shift_1 as usize];
@@ -191,10 +192,13 @@ fn multicore_try_32_bits() {
         println!("Insertions taken {:?}", start.elapsed());
         let start = std::time::Instant::now();
 
+        let pb = indicatif::ProgressBar::new((1 << WIDTH) as u64);
+
         let sets = &sets;
         worker.scope(len, |scope, chunk_size| {
             let mut start_idx = 0;
             for (chunk_idx, chunk) in results.chunks(chunk_size).enumerate() {
+                let pb = pb.clone();
                 scope.spawn(move |_| {
                     let mut idx = start_idx;
                     for el in chunk.iter() {
@@ -214,7 +218,7 @@ fn multicore_try_32_bits() {
                         idx += 1;
 
                         if (idx - start_idx) % (1<<20) == 0 {
-                            println!("Done {} items", idx - start_idx);
+                            pb.inc(1 << 20);
                         }
                     }
 
@@ -239,6 +243,8 @@ fn multicore_try_32_bits() {
                 start_idx += chunk_size;
             }
         });
+
+        pb.finish_and_clear();
 
         println!("Verification taken {:?}", start.elapsed());
 
