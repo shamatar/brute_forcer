@@ -290,6 +290,7 @@ fn multicore_try_32_bits() {
 
         for shift_2 in (shift_1+1)..WIDTH {
             let start = std::time::Instant::now();
+            let pb = indicatif::ProgressBar::new((1u64 << WIDTH) as u64);
 
             let maps_ref = &maps;
             // check
@@ -297,6 +298,7 @@ fn multicore_try_32_bits() {
             worker.scope(len, |scope, chunk_size| {
                 let mut start_idx = 0;
                 for chunk in results.chunks(chunk_size) {
+                    let pb = pb.clone();
                     scope.spawn(move |_| {
                         let mut idx = start_idx;
                         for e in chunk.iter() {
@@ -314,12 +316,18 @@ fn multicore_try_32_bits() {
                                 }
                             }
                             idx += 1;
+
+                            if (idx - start_idx) % (1<<20) == 0 {
+                                pb.inc(1 << 20);
+                            }
                         }
                     });
 
                     start_idx += chunk_size;
                 }
             });
+
+            pb.finish_and_clear();
 
             println!("Verification taken {:?}", start.elapsed());
 
