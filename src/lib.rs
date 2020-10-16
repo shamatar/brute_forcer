@@ -187,6 +187,7 @@ fn multicore_try_32_bits() {
             for (chunk, set) in results.chunks(chunk_size).zip(sets.chunks_mut(1)) {
                 scope.spawn(move |_| {
                     let set = &mut set[0];
+                    set.clear();
                     set.reserve((1 << WIDTH) / num_threads);
                     let mut idx = start_idx;
                     for e in chunk.iter() {
