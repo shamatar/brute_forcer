@@ -194,24 +194,20 @@ fn multicore_try_32_bits() {
                     set.clear();
                     if set.capacity() == initial_capacity {
                         set.reserve((1 << WIDTH) / num_threads);
-                        println!("Finished reserving capacity");
                     }
                     let mut idx = start_idx;
                     for e in chunk.iter() {
                         let mut el = *e;
                         el.mul_assign(&mul_by);
 
-                        let repr = el.into_repr();
+                        let el = el.into_repr();
 
-                        if set.contains(&repr) {
+                        if set.contains(&el) {
                             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
                         } else {
-                            set.insert(repr);
+                            set.insert(el);
                         }
                         idx += 1;
-                        if (idx - start_idx) % (1<<20) == 0 {
-                            println!{"Completed {} elements", idx - start_idx};
-                        }
                     }
                 });
 
@@ -234,8 +230,8 @@ fn multicore_try_32_bits() {
                         let set = &sets[set_idx];
                         let mut idx = start_idx;
                         for el in chunk.iter() {
-                            let repr = el.into_repr();
-                            if set.contains(&repr) {
+                            let el = el.into_repr();
+                            if set.contains(&el) {
                                 panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
                             }
                             idx += 1;
