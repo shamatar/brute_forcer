@@ -228,14 +228,18 @@ fn multicore_try_32_bits() {
                             continue;
                         }
                         let set = &sets[set_idx];
-                        let mut idx = start_idx;
-                        for el in chunk.iter() {
-                            let el = el.into_repr();
-                            if set.contains(&el) {
-                                panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
-                            }
-                            idx += 1;
+                        let this_set = &sets[chunk_idx];
+                        if !this_set.is_disjoint(set) {
+                            panic!("encoding is not unique!");
                         }
+                        // let mut idx = start_idx;
+                        // for el in chunk.iter() {
+                        //     let el = el.into_repr();
+                        //     if set.contains(&el) {
+                        //         panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
+                        //     }
+                        //     idx += 1;
+                        // }
                     }
                 });
 
