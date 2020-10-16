@@ -158,11 +158,11 @@ fn multicore_try_32_bits() {
 
         let mul_by = gen_powers[shift_1 as usize];
         // insert initial
-        for (_idx, &el) in results.iter().enumerate() {
+        for (idx, &el) in results.iter().enumerate() {
             let mut el = el;
             el.mul_assign(&mul_by);
             if set.contains(&el) {
-                panic!("explicit duplicate at shift {}", shift_1);
+                panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
             } else {
                 set.insert(el);
             }
