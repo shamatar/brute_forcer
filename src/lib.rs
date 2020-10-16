@@ -176,10 +176,12 @@ fn multicore_try_32_bits() {
 
     let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
     // let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
-    let mut sets = vec![std::collections::HashSet::new(); num_threads];
+    // let mut sets = vec![std::collections::HashSet::new(); num_threads];
+    let mut sets = vec![std::collections::BTreeSet::new(); num_threads];
 
     println!("Start verification of encodings and shifts for uniqueness in them");
     for shift_1 in 0..WIDTH {
+        let start = std::time::Instant::now();
         // insert initial
         let mul_by = gen_powers[shift_1 as usize];
         worker.scope(len, |scope, chunk_size| {
@@ -188,7 +190,7 @@ fn multicore_try_32_bits() {
                 scope.spawn(move |_| {
                     let set = &mut set[0];
                     set.clear();
-                    set.reserve((1 << WIDTH) / num_threads);
+                    // set.reserve((1 << WIDTH) / num_threads);
                     let mut idx = start_idx;
                     for e in chunk.iter() {
                         let mut el = *e;
@@ -206,6 +208,9 @@ fn multicore_try_32_bits() {
                 start_idx += chunk_size;
             }
         });
+
+        println!("Insertions taken {:?}", start.elapsed());
+        let start = std::time::Instant::now();
 
         let sets = &sets;
         worker.scope(len, |scope, chunk_size| {
@@ -230,6 +235,8 @@ fn multicore_try_32_bits() {
                 start_idx += chunk_size;
             }
         });
+
+        println!("Verification taken {:?}", start.elapsed());
 
         println!("Finished checking that shift {} contains no duplicates", shift_1);
     }
