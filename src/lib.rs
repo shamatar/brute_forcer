@@ -172,9 +172,12 @@ fn multicore_try_32_bits() {
 
     // drop(set);
 
+    println!("Allocate sets");
+
     let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
     let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
 
+    println!("Start verification of encodings and shifts for uniqueness in them");
     for shift_1 in 0..WIDTH {
         // insert initial
         let mul_by = gen_powers[shift_1 as usize];
