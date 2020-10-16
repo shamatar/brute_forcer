@@ -176,8 +176,10 @@ fn multicore_try_32_bits() {
 
     let num_threads = worker.get_num_spawned_threads(1 << WIDTH);
     // let mut sets = vec![std::collections::HashSet::with_capacity((1 << WIDTH) / num_threads); num_threads];
-    // let mut sets = vec![std::collections::HashSet::new(); num_threads];
-    let mut sets = vec![std::collections::BTreeSet::new(); num_threads];
+    let mut sets = vec![std::collections::HashSet::new(); num_threads];
+    // let mut sets = vec![std::collections::BTreeSet::new(); num_threads];
+
+    let initial_capacity = sets[0].capacity();
 
     println!("Start verification of encodings and shifts for uniqueness in them");
     for shift_1 in 0..WIDTH {
@@ -190,7 +192,10 @@ fn multicore_try_32_bits() {
                 scope.spawn(move |_| {
                     let set = &mut set[0];
                     set.clear();
-                    // set.reserve((1 << WIDTH) / num_threads);
+                    if set.capacity() == initial_capacity {
+                        set.reserve((1 << WIDTH) / num_threads);
+                        println!("Finished reserving capacity");
+                    }
                     let mut idx = start_idx;
                     for e in chunk.iter() {
                         let mut el = *e;
