@@ -196,12 +196,17 @@ fn multicore_try_32_bits() {
                         let mut el = *e;
                         el.mul_assign(&mul_by);
 
-                        if set.contains(&el) {
+                        let repr = el.into_repr();
+
+                        if set.contains(&repr) {
                             panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
                         } else {
-                            set.insert(el);
+                            set.insert(repr);
                         }
                         idx += 1;
+                        if (idx - start_idx) % (1<<20) == 0 {
+                            println!{"Completed {} elements", idx - start_idx};
+                        }
                     }
                 });
 
@@ -224,7 +229,8 @@ fn multicore_try_32_bits() {
                         let set = &sets[set_idx];
                         let mut idx = start_idx;
                         for el in chunk.iter() {
-                            if set.contains(&el) {
+                            let repr = el.into_repr();
+                            if set.contains(&repr) {
                                 panic!("explicit duplicate at shift {}: element {} for encoding of {:#032b}", shift_1, el, idx);
                             }
                             idx += 1;
